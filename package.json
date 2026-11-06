@@ -1,0 +1,7 @@
+{
+  "name": "placepoint-prototype",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "dependencies": { "ng-postcode-js": "*" }
+}

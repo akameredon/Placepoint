@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Placepoint – prototype</title>
+<style>
+:root{--bg:#10131a;--card:#181c26;--ink:#e8ebf2;--mute:#8b93a7;--acc:#3ddc97;--warn:#ffb454;--line:#2a3042}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,sans-serif}
+main{max-width:760px;margin:0 auto;padding:16px}h1{font-size:1.3rem;margin:.2em 0}h2{font-size:1rem;color:var(--acc);margin:0 0 8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0}
+input,button{font:inherit;border-radius:8px;border:1px solid var(--line);background:#0d1017;color:var(--ink);padding:8px 10px}
+input{width:100%;letter-spacing:.06em}button{cursor:pointer;background:var(--acc);color:#06210f;border:0;font-weight:600;margin:4px 4px 0 0}
+button.alt{background:#2a3042;color:var(--ink)}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.mute{color:var(--mute);font-size:.9rem}.code{font:600 1.35rem ui-monospace,monospace;color:var(--acc);word-break:break-all}
+canvas{width:100%;max-width:700px;background:#0d1017;border-radius:8px;touch-action:manipulation}
+.pad{display:grid;grid-template-columns:repeat(3,52px);gap:4px;margin-top:6px}.pad button{margin:0;padding:10px 0}
+.ok{color:var(--acc)}.bad{color:var(--warn)}#qr{background:#fff;padding:8px;display:inline-block;border-radius:6px}
+@media print{body>*:not(#plate){display:none}#plate{border:0}}
+</style></head><body><main>
+<h1>Placepoint <span class="mute">prototype v0.1</span></h1>
+<p class="mute">Building postcode → foot-level square → scannable anchor plate. Works offline; the NIPOST check needs the API.</p>
+
+<div class="card"><h2>1 · Building postcode</h2>
+<input id="pc" value="FC-03-B06-AG-12" autocomplete="off" aria-label="Building postcode">
+<div class="row"><button id="chk" class="alt">Confirm with NIPOST</button><span id="pcs" class="mute"></span></div></div>
+
+<div class="card"><h2>2 · Compound and your position</h2>
+<div class="row"><label>Width ft <input id="w" type="number" value="60" min="10" max="1000" style="width:90px"></label>
+<label>Length ft <input id="l" type="number" value="40" min="10" max="1000" style="width:90px"></label></div>
+<canvas id="cv" width="700" height="480"></canvas>
+<p class="mute">Tap the grid to stand somewhere, or use arrow keys / the pad to step one foot.</p>
+<div class="pad"><span></span><button data-d="0,-1">▲</button><span></span><button data-d="-1,0">◀</button><button data-d="0,1">▼</button><button data-d="1,0">▶</button></div></div>
+
+<div class="card"><h2>3 · Your place point code</h2>
+<div class="code" id="ppc"></div><div id="trust" class="mute"></div>
+<div class="row"><button id="a1" class="alt">Scan gate plate</button><button id="a2" class="alt">Scan door plate</button></div></div>
+
+<div class="card" id="plate"><h2>4 · Anchor plate (print and stick at the spot)</h2>
+<div id="qr"></div><div class="code" id="plc"></div><button class="alt" onclick="window.print()">Print plate</button></div>
+
+<p class="mute">Prototype only. Trust levels: L1 self-declared · L2 plate-scanned. Position drift between scans is a simulation.</p>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+const $=id=>document.getElementById(id), A="0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+const enc=n=>A[n>>5]+A[n&31], RX=/^[A-Z]{2}(0[1-9]|[1-9][0-9])[A-Z0-9]{3}[A-Z]{2}(0[1-9]|[1-9][0-9])$/;
+let W=60,L=40,x=0,y=20,steps=0,scanned=false,anchor="";
+const cv=$("cv"),g=cv.getContext("2d");
+const pcode=()=>$("pc").value.toUpperCase().replace(/[^A-Z0-9]/g,"");
+const pretty=c=>c.length==11?`${c.slice(0,2)}-${c.slice(2,4)}-${c.slice(4,7)}-${c.slice(7,9)}-${c.slice(9)}`:c;
+const anchors=()=>[{n:"Gate",x:0,y:Math.floor(L/2)},{n:"Door",x:W-8,y:Math.floor(L/2)}];
+function ppc(){return `${pretty(pcode())} · ${enc(x)}${enc(y)}`}
+function draw(){
+  const s=Math.max(3,Math.floor(Math.min(700/W,480/L)));cv.width=W*s;cv.height=L*s;
+  g.fillStyle="#0d1017";g.fillRect(0,0,cv.width,cv.height);
+  if(s>=8){g.strokeStyle="#1e2434";for(let i=0;i<=W;i++){g.beginPath();g.moveTo(i*s,0);g.lineTo(i*s,L*s);g.stroke()}for(let j=0;j<=L;j++){g.beginPath();g.moveTo(0,j*s);g.lineTo(W*s,j*s);g.stroke()}}
+  g.font="12px system-ui";anchors().forEach(a=>{g.fillStyle="#ffb454";g.fillRect(a.x*s,a.y*s,Math.max(s,6),Math.max(s,6));g.fillText(a.n,a.x*s+8,a.y*s-4)});
+  const r=(scanned?0.5:2)+0.1*steps;g.strokeStyle="#3ddc97";g.globalAlpha=.5;g.beginPath();g.arc((x+.5)*s,(y+.5)*s,r*s,0,7);g.stroke();g.globalAlpha=1;
+  g.fillStyle="#3ddc97";g.fillRect(x*s,y*s,Math.max(s,5),Math.max(s,5));
+  $("ppc").textContent=ppc();
+  $("trust").innerHTML=scanned&&steps==0?`<span class="ok">L2 plate-scanned</span> at ${anchor}. Accuracy about ±0.5 ft.`:`<span class="bad">L1 self-declared</span>${anchor?`, ${steps} step(s) since ${anchor}`:""}. Estimated accuracy ±${r.toFixed(1)} ft. Scan a plate to correct it.`;
+  $("plc").textContent=ppc();$("qr").innerHTML="";
+  if(window.QRCode)new QRCode($("qr"),{text:`PPC1|${pcode()}|${enc(x)}${enc(y)}`,width:128,height:128});
+}
+function move(dx,dy){x=Math.min(W-1,Math.max(0,x+dx));y=Math.min(L-1,Math.max(0,y+dy));steps++;scanned=false;draw()}
+function scan(i){const a=anchors()[i];x=a.x;y=a.y;steps=0;scanned=true;anchor=a.n;draw()}
+cv.addEventListener("click",e=>{const r=cv.getBoundingClientRect(),s=cv.width/W;x=Math.floor((e.clientX-r.left)/r.width*cv.width/s);y=Math.floor((e.clientY-r.top)/r.height*cv.height/s);steps=0;scanned=false;anchor="";draw()});
+document.querySelectorAll(".pad button").forEach(b=>b.onclick=()=>move(...b.dataset.d.split(",").map(Number)));
+addEventListener("keydown",e=>{const m={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]}[e.key];if(m&&document.activeElement.tagName!="INPUT"){e.preventDefault();move(...m)}});
+$("a1").onclick=()=>scan(0);$("a2").onclick=()=>scan(1);
+function size(){W=Math.min(1000,Math.max(10,+$("w").value||60));L=Math.min(1000,Math.max(10,+$("l").value||40));x=Math.min(x,W-1);y=Math.min(y,L-1);draw()}
+$("w").oninput=$("l").oninput=size;
+$("pc").oninput=()=>{const ok=RX.test(pcode());$("pcs").innerHTML=ok?'<span class="ok">Format OK (offline check)</span>':'<span class="bad">Not a valid 11-character code</span>';draw()};
+$("chk").onclick=async()=>{
+  if(!RX.test(pcode()))return $("pcs").innerHTML='<span class="bad">Fix the format first</span>';
+  $("pcs").textContent="Asking NIPOST…";
+  try{const r=await fetch("/api/lookup?code="+pcode()),j=await r.json();
+    $("pcs").innerHTML=j.ok?(j.valid?'<span class="ok">Confirmed: assigned to a building</span>':'<span class="bad">Not assigned (status: '+j.status+')</span>'):'<span class="bad">'+j.error+'</span>'}
+  catch(e){$("pcs").innerHTML='<span class="bad">Demo mode: API not connected yet</span>'}};
+$("pc").oninput();size();
+</script></body></html>
