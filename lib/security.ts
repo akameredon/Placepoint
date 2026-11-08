@@ -23,8 +23,8 @@ export function bearer(req: Request): string | null {
 
 /** Prefers headers set by the hosting proxy; the left of x-forwarded-for is client-controlled. */
 function clientIp(req: Request): string {
-  const vercel = req.headers.get("x-vercel-forwarded-for");
-  if (vercel) return vercel.split(",")[0].trim();
+  const edge = req.headers.get("cf-connecting-ip") ?? req.headers.get("x-vercel-forwarded-for");
+  if (edge) return edge.split(",")[0].trim();
   const hops = (req.headers.get("x-forwarded-for") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   return hops.at(-1) ?? req.headers.get("x-real-ip") ?? "unknown";
 }
