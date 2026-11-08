@@ -40,6 +40,7 @@ export default function NewPlace() {
   const [consent, setConsent] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [copyMsg, setCopyMsg] = useState("");
   const [unsaved, setUnsaved] = useState<{ slug: string; token: string } | null>(null);
 
   const parsed = parse(postcode);
@@ -182,9 +183,20 @@ export default function NewPlace() {
           <p className="text-sm text-slate-600">This browser could not store your edit key. Copy it somewhere safe now. Without it you cannot edit or delete this Placepoint.</p>
           <input readOnly value={unsaved.token} onFocus={(e) => e.currentTarget.select()} className="input font-mono" />
           <div className="flex gap-2">
-            <button type="button" className="btn btn-ghost" onClick={() => navigator.clipboard?.writeText(unsaved.token)}>Copy key</button>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() =>
+                navigator.clipboard
+                  .writeText(unsaved.token)
+                  .then(() => setCopyMsg("Copied."), () => setCopyMsg("Copy failed — select the key above and copy it by hand."))
+              }
+            >
+              Copy key
+            </button>
             <a className="btn btn-primary" href={`/p/${unsaved.slug}?created=1`}>I saved it — open my Placepoint</a>
           </div>
+          {copyMsg && <p role="status" className="text-sm text-slate-600">{copyMsg}</p>}
         </div>
       </main>
     );
