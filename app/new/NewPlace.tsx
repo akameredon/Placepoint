@@ -208,7 +208,7 @@ export default function NewPlace() {
             </p>
           </div>
 
-          {nearby.length > 1 && (
+          {nearby.length > 0 && (
             <div>
               <p className="label">Buildings near you</p>
               <div className="flex flex-wrap gap-2">
