@@ -1,5 +1,6 @@
 import { Pool } from "pg";
-import { cache } from "react";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { onWorkers } from "./runtime";
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS places (
@@ -43,9 +44,18 @@ function connectionString(): string {
   return url;
 }
 
-// Cloudflare Workers cannot reuse sockets across requests, so each request gets its own client there.
-const onWorkers = typeof navigator !== "undefined" && navigator.userAgent === "Cloudflare-Workers";
-const requestPool = cache(() => new Pool({ connectionString: connectionString(), max: 1 }));
+// Workers cannot reuse sockets across requests: one single-connection pool per request, closed when it ends.
+const requestPools = new WeakMap<object, Pool>();
+
+function requestPool(): Pool {
+  const { ctx } = getCloudflareContext();
+  let p = requestPools.get(ctx);
+  if (!p) {
+    p = new Pool({ connectionString: connectionString(), max: 1, idleTimeoutMillis: 1_000 });
+    requestPools.set(ctx, p);
+  }
+  return p;
+}
 
 function pool(): Pool {
   if (onWorkers) return requestPool();
