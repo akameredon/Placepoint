@@ -1,5 +1,6 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { db } from "./db";
+import { onWorkers } from "./runtime";
 
 export function newOwnerToken(): string {
   return randomBytes(24).toString("base64url");
@@ -21,9 +22,9 @@ export function bearer(req: Request): string | null {
   return m ? m[1].trim() : null;
 }
 
-/** Prefers headers set by the hosting proxy; the left of x-forwarded-for is client-controlled. */
+/** Uses the header the current host sets itself; the left of x-forwarded-for is client-controlled. */
 function clientIp(req: Request): string {
-  const edge = req.headers.get("cf-connecting-ip") ?? req.headers.get("x-vercel-forwarded-for");
+  const edge = onWorkers ? req.headers.get("cf-connecting-ip") : process.env.VERCEL ? req.headers.get("x-vercel-forwarded-for") : null;
   if (edge) return edge.split(",")[0].trim();
   const hops = (req.headers.get("x-forwarded-for") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   return hops.at(-1) ?? req.headers.get("x-real-ip") ?? "unknown";
