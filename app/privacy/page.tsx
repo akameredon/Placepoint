@@ -21,7 +21,7 @@ export default function Page() {
       <ul>
         <li><strong>Placepoint content you enter:</strong> the building postcode, the pin location (latitude/longitude and GPS accuracy), type, name, directions, landmark and an optional phone number.</li>
         <li><strong>An edit key:</strong> a random secret created for you. We store only a one-way hash of it, never the key itself.</li>
-        <li><strong>Abuse prevention:</strong> a one-way salted hash of your IP address, kept for at most one hour to rate-limit requests. We never store raw IP addresses.</li>
+        <li><strong>Abuse prevention:</strong> a one-way salted hash of your IP address, used to rate-limit requests and purged once it is more than one hour old. We never store raw IP addresses.</li>
         <li><strong>View count:</strong> an anonymous counter of how many times a Placepoint was opened.</li>
       </ul>
       <p>We do <strong>not</strong> require an account, we do not track your location in the background, and we do not use advertising or tracking cookies. Your device&apos;s location is read only when you press a location button, and only the pin you save is stored.</p>
@@ -47,7 +47,7 @@ export default function Page() {
       <p>We do not sell personal data. Some providers may process data outside Nigeria; where they do, we rely on safeguards permitted by NDPA Part VIII.</p>
 
       <h2>How long we keep it</h2>
-      <p>Placepoint content is kept until you delete it. Rate-limit records are deleted after one hour. When you delete a Placepoint it is erased from our live database immediately.</p>
+      <p>Placepoint content is kept until you delete it. Rate-limit records older than one hour are purged automatically. When you delete a Placepoint it is erased from our live database immediately.</p>
 
       <h2>Your rights</h2>
       <p>Under the NDPA you can access, correct, delete, or withdraw consent for your data, object to processing, and request a copy of it. You can edit or delete a Placepoint yourself at any time from <Link className="underline" href="/mine">My places</Link> or with your edit key. For anything else, email us. You may also complain to the <strong>Nigeria Data Protection Commission</strong> (ndpc.gov.ng).</p>

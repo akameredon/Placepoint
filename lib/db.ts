@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS rate_limits (
   window_start TIMESTAMPTZ NOT NULL,
   count INTEGER NOT NULL
 );
+CREATE INDEX IF NOT EXISTS rate_limits_window_idx ON rate_limits (window_start);
 `;
 
 const g = globalThis as unknown as { __ppPool?: Pool; __ppSchema?: Promise<void> };

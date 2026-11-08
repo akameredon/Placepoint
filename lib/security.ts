@@ -47,9 +47,7 @@ export async function rateLimit(req: Request, bucket: string, limit: number, win
        RETURNING count`,
       [`${bucket}:${ipKey(req)}`, windowSec],
     );
-    if (Math.random() < 0.01) {
-      pool.query(`DELETE FROM rate_limits WHERE window_start < now() - interval '1 day'`).catch(() => {});
-    }
+    pool.query(`DELETE FROM rate_limits WHERE window_start < now() - interval '1 hour'`).catch(() => {});
     return rows[0].count <= limit;
   } catch {
     return false;
