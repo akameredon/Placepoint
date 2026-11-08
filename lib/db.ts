@@ -1,4 +1,5 @@
 import { Pool } from "pg";
+import { cache } from "react";
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS places (
@@ -30,32 +31,33 @@ CREATE TABLE IF NOT EXISTS rate_limits (
 CREATE INDEX IF NOT EXISTS rate_limits_window_idx ON rate_limits (window_start);
 `;
 
-const g = globalThis as unknown as { __ppPool?: Pool; __ppSchema?: Promise<void> };
+const g = globalThis as unknown as { __ppPool?: Pool; __ppSchemaReady?: boolean };
 
 export function databaseUrl(): string | undefined {
   return process.env.DATABASE_URL || process.env.POSTGRES_URL || undefined;
 }
 
+function connectionString(): string {
+  const url = databaseUrl();
+  if (!url) throw new Error("DATABASE_URL is not set");
+  return url;
+}
+
+// Cloudflare Workers cannot reuse sockets across requests, so each request gets its own client there.
+const onWorkers = typeof navigator !== "undefined" && navigator.userAgent === "Cloudflare-Workers";
+const requestPool = cache(() => new Pool({ connectionString: connectionString(), max: 1 }));
+
 function pool(): Pool {
-  if (!g.__ppPool) {
-    const connectionString = databaseUrl();
-    if (!connectionString) throw new Error("DATABASE_URL is not set");
-    g.__ppPool = new Pool({ connectionString, max: 5, idleTimeoutMillis: 10_000 });
-  }
+  if (onWorkers) return requestPool();
+  g.__ppPool ??= new Pool({ connectionString: connectionString(), max: 5, idleTimeoutMillis: 10_000 });
   return g.__ppPool;
 }
 
 export async function db(): Promise<Pool> {
   const p = pool();
-  if (!g.__ppSchema) {
-    g.__ppSchema = p.query(SCHEMA).then(
-      () => undefined,
-      (err) => {
-        g.__ppSchema = undefined;
-        throw err;
-      },
-    );
+  if (!g.__ppSchemaReady) {
+    await p.query(SCHEMA);
+    g.__ppSchemaReady = true;
   }
-  await g.__ppSchema;
   return p;
 }

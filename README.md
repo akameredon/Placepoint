@@ -43,12 +43,22 @@ The schema is created automatically on first request. A local Postgres:
 
 Checks: `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`.
 
-## Deploy (Vercel)
+## Deploy (Cloudflare Workers)
 
-1. Import the repo in Vercel.
-2. Add a Postgres database (Neon via Vercel Marketplace sets `DATABASE_URL`/`POSTGRES_URL`).
-3. Set `NIPOST_API_KEY`, `IP_HASH_SALT` and `NEXT_PUBLIC_SITE_URL`.
+Runs on Workers through the [OpenNext adapter](https://opennext.js.org/cloudflare). Config: `wrangler.jsonc`, `open-next.config.ts`.
+
+1. Create a hosted Postgres database (e.g. Neon) and copy its connection string.
+2. Cloudflare dashboard → Workers & Pages → Create → Import a repository → pick this repo.
+   - Build command: `npx opennextjs-cloudflare build`
+   - Deploy command: `npx opennextjs-cloudflare deploy`
+   - Build variable: `NEXT_PUBLIC_SITE_URL` (your public URL)
+3. Worker → Settings → Variables and Secrets: add `DATABASE_URL`, `NIPOST_API_KEY` and `IP_HASH_SALT` as secrets.
 4. Deploy, then check `/api/health` returns `{"ok":true,"database":"ok","nipost":"live"}`.
+
+From a terminal instead: `npx wrangler login`, `npx wrangler secret put DATABASE_URL` (and the others), then `npm run cf:deploy`.
+Preview the Workers build locally with `npm run cf:preview` (reads `.dev.vars`; see `.dev.vars.example`).
+
+The standard `next build` output also still deploys to Vercel or any Node host.
 
 ## API
 
