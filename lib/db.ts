@@ -70,7 +70,10 @@ function pool(): Pool {
 export async function db(): Promise<Pool> {
   const p = pool();
   if (!g.__ppSchemaReady) {
-    await p.query(SCHEMA);
+    await p.query(SCHEMA).catch(async (err) => {
+      await p.query("ROLLBACK").catch(() => {});
+      throw err;
+    });
     g.__ppSchemaReady = true;
   }
   return p;
