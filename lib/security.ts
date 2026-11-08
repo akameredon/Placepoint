@@ -35,6 +35,8 @@ function ipKey(req: Request): string {
   return createHash("sha256").update(salt + clientIp(req)).digest("hex").slice(0, 32);
 }
 
+let lastPurge = 0;
+
 /** Fixed-window limiter backed by Postgres so it works across serverless instances. */
 export async function rateLimit(req: Request, bucket: string, limit: number, windowSec: number): Promise<boolean> {
   try {
@@ -47,7 +49,10 @@ export async function rateLimit(req: Request, bucket: string, limit: number, win
        RETURNING count`,
       [`${bucket}:${ipKey(req)}`, windowSec],
     );
-    pool.query(`DELETE FROM rate_limits WHERE window_start < now() - interval '1 hour'`).catch(() => {});
+    if (Date.now() - lastPurge > 60_000) {
+      lastPurge = Date.now();
+      pool.query(`DELETE FROM rate_limits WHERE window_start < now() - interval '1 hour'`).catch(() => {});
+    }
     return rows[0].count <= limit;
   } catch {
     return false;
