@@ -149,7 +149,11 @@ export default function NewPlace() {
       });
       const j = await r.json();
       if (!j.ok) { setError(j.error); return; }
-      saveOwned({ slug: j.place.slug, display: j.place.display, label: j.place.label, token: j.owner_token, created_at: j.place.created_at });
+      try {
+        saveOwned({ slug: j.place.slug, display: j.place.display, label: j.place.label, token: j.owner_token, created_at: j.place.created_at });
+      } catch {
+        window.prompt("This browser could not save your edit key. Copy it now — you need it to edit or delete this Placepoint:", j.owner_token);
+      }
       router.push(`/p/${j.place.slug}?created=1`);
     } catch {
       setError("Network problem. Check your connection and try again.");
