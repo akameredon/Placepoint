@@ -40,6 +40,7 @@ export default function NewPlace() {
   const [consent, setConsent] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [unsaved, setUnsaved] = useState<{ slug: string; token: string } | null>(null);
 
   const parsed = parse(postcode);
   const valid = parsed instanceof Postcode;
@@ -100,7 +101,23 @@ export default function NewPlace() {
         if (j.ok) setSugg({ q: clean, list: (j.suggestions ?? []).map((s: { code: string }) => s.code).slice(0, 8) });
       } catch { /* suggestions are optional */ }
     }, 250);
-    return () => clearTimeout(t);
+    if (unsaved) {
+    return (
+      <main className="mx-auto max-w-xl px-4 py-10">
+        <div className="card space-y-4">
+          <h1 className="text-xl font-bold">Your Placepoint is live — save your edit key</h1>
+          <p className="text-sm text-slate-600">This browser could not store your edit key. Copy it somewhere safe now. Without it you cannot edit or delete this Placepoint.</p>
+          <input readOnly value={unsaved.token} onFocus={(e) => e.currentTarget.select()} className="input font-mono" />
+          <div className="flex gap-2">
+            <button type="button" className="btn btn-ghost" onClick={() => navigator.clipboard?.writeText(unsaved.token)}>Copy key</button>
+            <a className="btn btn-primary" href={`/p/${unsaved.slug}?created=1`}>I saved it — open my Placepoint</a>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  return () => clearTimeout(t);
   }, [postcode]);
 
   const typed = postcode.toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -152,7 +169,8 @@ export default function NewPlace() {
       try {
         saveOwned({ slug: j.place.slug, display: j.place.display, label: j.place.label, token: j.owner_token, created_at: j.place.created_at });
       } catch {
-        window.prompt("This browser could not save your edit key. Copy it now — you need it to edit or delete this Placepoint:", j.owner_token);
+        setUnsaved({ slug: j.place.slug, token: j.owner_token });
+        return;
       }
       router.push(`/p/${j.place.slug}?created=1`);
     } catch {
@@ -171,6 +189,22 @@ export default function NewPlace() {
       ))}
     </ol>
   );
+
+  if (unsaved) {
+    return (
+      <main className="mx-auto max-w-xl px-4 py-10">
+        <div className="card space-y-4">
+          <h1 className="text-xl font-bold">Your Placepoint is live — save your edit key</h1>
+          <p className="text-sm text-slate-600">This browser could not store your edit key. Copy it somewhere safe now. Without it you cannot edit or delete this Placepoint.</p>
+          <input readOnly value={unsaved.token} onFocus={(e) => e.currentTarget.select()} className="input font-mono" />
+          <div className="flex gap-2">
+            <button type="button" className="btn btn-ghost" onClick={() => navigator.clipboard?.writeText(unsaved.token)}>Copy key</button>
+            <a className="btn btn-primary" href={`/p/${unsaved.slug}?created=1`}>I saved it — open my Placepoint</a>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <div>
