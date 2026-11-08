@@ -44,6 +44,7 @@ export default function NewPlace() {
   const parsed = parse(postcode);
   const valid = parsed instanceof Postcode;
   const lastChecked = useRef("");
+  const pinnedByHand = useRef(false);
 
   async function check(code: string) {
     setChecking(true);
@@ -118,10 +119,16 @@ export default function NewPlace() {
   }
 
   async function improveGps() {
+    pinnedByHand.current = false;
     setRefining(true);
     setGpsMsg("Getting a precise GPS fix… stand still with a clear view of the sky.");
     try {
-      const best = await refineFix((f) => { setFix(f); setPin({ lat: f.lat, lng: f.lng }); setAccuracy(f.accuracy); }, 8, 25000);
+      const best = await refineFix((f) => {
+        setFix(f);
+        if (pinnedByHand.current) return;
+        setPin({ lat: f.lat, lng: f.lng });
+        setAccuracy(f.accuracy);
+      }, 8, 25000);
       setGpsMsg(`Done. Accuracy about ±${Math.round(best.accuracy)} m. Drag the pin onto the exact spot if needed.`);
     } catch (e) {
       setGpsMsg((e as Error).message);
@@ -233,7 +240,7 @@ export default function NewPlace() {
             <h2 className="font-semibold">Pin the exact spot</h2>
             <p className="text-sm text-slate-600">Drag the pin, or tap the map, to put it exactly on your gate, door or shop. Satellite view helps.</p>
           </div>
-          <Map center={pin ?? fix ?? NIGERIA_CENTER} zoom={pin ? 19 : 6} pin={pin} accuracy={accuracy} editable onPin={(p) => { setPin(p); setAccuracy(null); }} className="h-96" />
+          <Map center={pin ?? fix ?? NIGERIA_CENTER} zoom={pin ? 19 : 6} pin={pin} accuracy={accuracy} editable onPin={(p) => { pinnedByHand.current = true; setPin(p); setAccuracy(null); }} className="h-96" />
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" className="btn-ghost" onClick={improveGps} disabled={refining}>{refining ? "Improving GPS…" : "Use my current GPS position"}</button>
             {accuracy != null && <span className="text-sm text-slate-600">GPS accuracy ±{Math.round(accuracy)} m</span>}
