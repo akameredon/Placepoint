@@ -21,10 +21,12 @@ export function bearer(req: Request): string | null {
   return m ? m[1].trim() : null;
 }
 
+/** Prefers headers set by the hosting proxy; the left of x-forwarded-for is client-controlled. */
 function clientIp(req: Request): string {
-  const fwd = req.headers.get("x-forwarded-for");
-  if (fwd) return fwd.split(",")[0].trim();
-  return req.headers.get("x-real-ip") ?? "unknown";
+  const trusted = req.headers.get("x-vercel-forwarded-for") ?? req.headers.get("x-real-ip");
+  if (trusted) return trusted.split(",")[0].trim();
+  const hops = (req.headers.get("x-forwarded-for") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  return hops.at(-1) ?? "unknown";
 }
 
 /** Raw IPs are never stored; only a salted hash is used as the rate-limit key. */
