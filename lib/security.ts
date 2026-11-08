@@ -58,6 +58,6 @@ export function json(data: unknown, status = 200, headers: Record<string, string
   return Response.json(data, { status, headers });
 }
 
-export function tooMany() {
-  return json({ ok: false, error: "Too many requests. Please wait a minute and try again." }, 429);
+export function tooMany(headers: Record<string, string> = {}) {
+  return json({ ok: false, error: "Too many requests. Please wait a minute and try again." }, 429, headers);
 }

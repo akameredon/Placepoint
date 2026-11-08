@@ -9,7 +9,7 @@ export async function GET(req: Request, ctx: RouteContext<"/api/v1/places/[code]
   const { code } = await ctx.params;
   const pc = parsePlaceCode(code);
   if (!pc) return json({ ok: false, error: "Invalid Placepoint code" }, 400, CORS);
-  if (!(await rateLimit(req, "public", 120, 60))) return tooMany();
+  if (!(await rateLimit(req, "public", 120, 60))) return tooMany({ "Access-Control-Allow-Origin": "*" });
   const row = await findPlace(pc);
   if (!row) return json({ ok: false, error: "Placepoint not found" }, 404, CORS);
   return json({ ok: true, data: withUrl(toPublic(row)) }, 200, CORS);

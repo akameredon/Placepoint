@@ -9,7 +9,7 @@ export async function GET(req: Request, ctx: RouteContext<"/api/v1/postcodes/[po
   const { postcode } = await ctx.params;
   const pc = parsePostcode(postcode);
   if (!pc) return json({ ok: false, error: "Invalid postcode" }, 400, CORS);
-  if (!(await rateLimit(req, "public", 120, 60))) return tooMany();
+  if (!(await rateLimit(req, "public", 120, 60))) return tooMany({ "Access-Control-Allow-Origin": "*" });
   return json({ ok: true, postcode: pc.toString(), data: (await placesAtPostcode(pc.compact)).map(withUrl) }, 200, CORS);
 }
 
