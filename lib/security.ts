@@ -52,7 +52,7 @@ export async function rateLimit(req: Request, bucket: string, limit: number, win
     }
     return rows[0].count <= limit;
   } catch {
-    return true;
+    return false;
   }
 }
 
