@@ -35,8 +35,13 @@ export const mockFetch: typeof fetch = async (input) => {
   }
   if (url.pathname === "/v1/search/autocomplete") {
     const prefix = (q.get("q") ?? "").replace(/[^A-Z0-9]/gi, "").toUpperCase();
-    const codes = Object.keys(KNOWN).filter((c) => c.startsWith(prefix));
-    return ok({ segment: "unit", suggestions: codes.map((c) => ({ code: c.slice(9) , label: dashed(c) })) });
+    const bounds: [string, number, number][] = [["lga", 2, 4], ["district", 4, 7], ["area", 7, 9], ["unit", 9, 11]];
+    let i = 0, used = 0;
+    for (const len of [2, 2, 3, 2, 2]) { if (used + len > prefix.length) break; used += len; i++; }
+    const seg = bounds[i - 1];
+    if (!seg) return ok({ segment: null, suggestions: [] });
+    const values = [...new Set(Object.keys(KNOWN).filter((c) => c.startsWith(prefix.slice(0, used))).map((c) => c.slice(seg[1], seg[2])))];
+    return ok({ segment: seg[0], suggestions: values.map((code) => ({ code, label: null })) });
   }
   if (url.pathname === "/v1/search/reverse" || url.pathname === "/v1/search/nearby") {
     const at = { lat: Number(q.get("lat")), lng: Number(q.get("lng")) };
