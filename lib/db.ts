@@ -2,7 +2,10 @@ import { Pool } from "pg";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { onWorkers } from "./runtime";
 
+// The advisory lock serialises concurrent cold starts so overlapping DDL can't fail.
 const SCHEMA = `
+BEGIN;
+SELECT pg_advisory_xact_lock(727372);
 CREATE TABLE IF NOT EXISTS places (
   id BIGSERIAL PRIMARY KEY,
   code TEXT NOT NULL UNIQUE,
@@ -30,6 +33,7 @@ CREATE TABLE IF NOT EXISTS rate_limits (
   count INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS rate_limits_window_idx ON rate_limits (window_start);
+COMMIT;
 `;
 
 const g = globalThis as unknown as { __ppPool?: Pool; __ppSchemaReady?: boolean };
