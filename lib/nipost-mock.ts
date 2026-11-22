@@ -31,7 +31,21 @@ export const mockFetch: typeof fetch = async (input) => {
   if (url.pathname === "/v1/lookup") {
     const code = (q.get("code") ?? "").replace(/[^A-Z0-9]/gi, "").toUpperCase();
     const hit = KNOWN[code];
-    return ok({ postcode: dashed(code), valid: Boolean(hit), status: hit ? "valid" : "not_found" });
+    const level = Number(q.get("level") ?? "1");
+    return ok({
+      postcode: dashed(code),
+      valid: Boolean(hit),
+      status: hit ? "valid" : "not_found",
+      ...(hit && level >= 2 ? {
+        administrative_address: {
+          state_name: hit.state,
+          lga_name: hit.lga,
+          locality_name: hit.lga,
+          zone: "MOCK ZONE",
+        },
+        recent_house_address: { recent: hit.address },
+      } : {}),
+    });
   }
   if (url.pathname === "/v1/search/autocomplete") {
     const prefix = (q.get("q") ?? "").replace(/[^A-Z0-9]/gi, "").toUpperCase();
