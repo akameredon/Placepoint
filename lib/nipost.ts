@@ -6,7 +6,12 @@ import { mockFetch } from "./nipost-mock";
 export type NipostMode = "live" | "test" | "mock" | "off";
 
 function apiKey(): string | undefined {
-  return process.env.NIPOST_API_KEY || process.env.NG_POSTCODE_API_KEY || undefined;
+  return (
+    process.env.NIPOST_API_KEY ||
+    process.env.NG_POSTCODE_API_KEY ||
+    process.env.NGNGIPOST_API_KEY ||
+    undefined
+  );
 }
 
 export function nipostMode(): NipostMode {
