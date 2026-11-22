@@ -3,15 +3,27 @@ import { parsePostcode } from "@/lib/code";
 import { lookupPostcodeLevel2 } from "@/lib/nipost";
 
 const originalMock = process.env.NIPOST_MOCK;
+const originalMaxLevel = process.env.NIPOST_MAX_LEVEL;
 
 afterEach(() => {
   if (originalMock === undefined) delete process.env.NIPOST_MOCK;
   else process.env.NIPOST_MOCK = originalMock;
+  if (originalMaxLevel === undefined) delete process.env.NIPOST_MAX_LEVEL;
+  else process.env.NIPOST_MAX_LEVEL = originalMaxLevel;
 });
 
 describe("NIPOST level 2 lookup", () => {
+  it("refuses paid lookup while the explicit level cap is disabled", async () => {
+    delete process.env.NIPOST_MAX_LEVEL;
+    process.env.NIPOST_MOCK = "1";
+    const code = parsePostcode("FC-03-B06-AG-12");
+    const result = await lookupPostcodeLevel2(code!);
+    expect(result).toMatchObject({ ok: false, status: 503 });
+  });
+
   it("decodes administrative address and house-address presence in mock mode", async () => {
     process.env.NIPOST_MOCK = "1";
+    process.env.NIPOST_MAX_LEVEL = "2";
     const code = parsePostcode("FC-03-B06-AG-12");
     expect(code).not.toBeNull();
 
@@ -29,6 +41,7 @@ describe("NIPOST level 2 lookup", () => {
 
   it("does not invent level 2 address fields for an unassigned postcode", async () => {
     process.env.NIPOST_MOCK = "1";
+    process.env.NIPOST_MAX_LEVEL = "2";
     const code = parsePostcode("FC-03-B06-AG-99");
     expect(code).not.toBeNull();
 
