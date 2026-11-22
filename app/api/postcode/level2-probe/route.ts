@@ -20,10 +20,6 @@ export async function POST(req: Request) {
     return json({ ok: false, error: "Unauthorized." }, 401, NO_STORE);
   }
 
-  if (!(await rateLimit(req, "nipost-level2-probe", 1, 86400))) {
-    return tooMany(NO_STORE);
-  }
-
   let body: unknown;
   try {
     body = await req.json();
@@ -36,6 +32,10 @@ export async function POST(req: Request) {
   const code = parsePostcode(raw);
   if (!code) {
     return json({ ok: false, error: postcodeError(raw) ?? "Invalid postcode" }, 400, NO_STORE);
+  }
+
+  if (!(await rateLimit(req, "nipost-level2-probe", 1, 86400))) {
+    return tooMany(NO_STORE);
   }
 
   // A free L1 check prevents paid requests for well-formed but unassigned codes.
