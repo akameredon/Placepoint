@@ -62,6 +62,9 @@ export async function verifyPostcode(code: Postcode): Promise<{ verification: Ve
 
 /** Paid level-2 lookup. Call only after a successful free level-1 validation. */
 export function lookupPostcodeLevel2(code: Postcode): Promise<Result<Lookup>> {
+  if (process.env.NIPOST_MAX_LEVEL !== "2") {
+    return Promise.resolve({ ok: false, status: 503, error: "NIPOST level 2 is disabled. Set NIPOST_MAX_LEVEL=2 only after access is approved." });
+  }
   return send(lookup(code, 2));
 }
 
