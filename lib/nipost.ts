@@ -1,5 +1,5 @@
 import type { Postcode } from "ng-postcode-js";
-import { ApiError, autocomplete, lookup, nearby, reverse } from "ng-postcode-js/api";
+import { ApiError, autocomplete, lookup, nearby, reverse, type Lookup } from "ng-postcode-js/api";
 import { Client, TransportError } from "ng-postcode-js/client";
 import { mockFetch } from "./nipost-mock";
 
@@ -58,6 +58,11 @@ export async function verifyPostcode(code: Postcode): Promise<{ verification: Ve
   const r = await send(lookup(code, 1));
   if (!r.ok) return { verification: "unverified", detail: r.error };
   return { verification: r.data.valid ? "verified" : "not_found", detail: r.data.status ?? undefined };
+}
+
+/** Paid level-2 lookup. Call only after a successful free level-1 validation. */
+export function lookupPostcodeLevel2(code: Postcode): Promise<Result<Lookup>> {
+  return send(lookup(code, 2));
 }
 
 export const suggest = (partial: string) => send(autocomplete(partial));
