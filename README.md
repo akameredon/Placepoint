@@ -52,7 +52,7 @@ Runs on Workers through the [OpenNext adapter](https://opennext.js.org/cloudflar
    - Build command: `npx opennextjs-cloudflare build`
    - Deploy command: `npx opennextjs-cloudflare deploy`
    - Build variable: `NEXT_PUBLIC_SITE_URL` (your public URL)
-3. Worker → Settings → Variables and Secrets: add `DATABASE_URL`, `NIPOST_API_KEY` and `IP_HASH_SALT` as secrets.
+3. Worker → Settings → Variables and Secrets: add `DATABASE_URL`, `NIPOST_API_KEY` and `IP_HASH_SALT` as secrets. Keep paid NIPOST lookups disabled with `NIPOST_MAX_LEVEL=1` unless NIPOST has approved a higher level.
 4. Deploy, then check `/api/health` returns `{"ok":true,"database":"ok","nipost":"live"}`.
 
 From a terminal instead: `npx wrangler login`, `npx wrangler secret put DATABASE_URL` (and the others), then `npm run cf:deploy`.
@@ -67,3 +67,4 @@ The standard `next build` output also still deploys to Vercel or any Node host.
 | `GET /api/v1/places/{code}` | Resolve one Placepoint |
 | `GET /api/v1/postcodes/{postcode}/places` | Placepoints in a building |
 | `GET /api/health` | Database and NIPOST status |
+| `POST /api/postcode/level2-probe` | Restricted L2 diagnostic; requires a bearer secret and explicit `NIPOST_MAX_LEVEL=2` opt-in. Performs a free L1 precheck first and redacts the house address from its response. |
